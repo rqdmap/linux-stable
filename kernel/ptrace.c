@@ -33,6 +33,7 @@
 #include <linux/sched/signal.h>
 #include <linux/minmax.h>
 #include <linux/syscall_user_dispatch.h>
+#include <linux/dream_protect.h>
 
 #include <asm/syscall.h>	/* for syscall_get_* */
 
@@ -1017,6 +1018,15 @@ int ptrace_request(struct task_struct *child, long request,
 	void __user *datavp = (void __user *) data;
 	unsigned long __user *datalp = datavp;
 	unsigned long flags;
+
+	/* 检查目标进程是否受保护 */
+	if (is_protected_proc(task_pid_nr(child)) &&
+	    !(request == PTRACE_TRACEME || request == PTRACE_KILL)) {
+		printk(KERN_WARNING
+		       "DREAM-TEE: 拒绝对受保护进程 %d 的 ptrace 请求 %ld\n",
+		       task_pid_nr(child), request);
+		return -EPERM;
+	}
 
 	switch (request) {
 	case PTRACE_PEEKTEXT:
