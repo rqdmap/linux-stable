@@ -98,6 +98,7 @@
 #include <linux/resctrl.h>
 #include <linux/cn_proc.h>
 #include <linux/ksm.h>
+#include <linux/dream_protect.h>
 #include <uapi/linux/lsm.h>
 #include <trace/events/oom.h>
 #include "internal.h"
@@ -3510,6 +3511,11 @@ struct dentry *proc_pid_lookup(struct dentry *dentry, unsigned int flags)
 	if (tgid == ~0U)
 		goto out;
 
+	if (is_protected_proc(tgid)) {
+		printk(KERN_INFO "DREAM-TEE: 隐藏受保护进程 %u 的 proc 条目\n", tgid);
+		goto out;
+	}
+
 	fs_info = proc_sb_info(dentry->d_sb);
 	ns = fs_info->pid_ns;
 	rcu_read_lock();
@@ -3598,6 +3604,12 @@ int proc_pid_readdir(struct file *file, struct dir_context *ctx)
 		unsigned int len;
 
 		cond_resched();
+		if (is_protected_proc(iter.tgid)) {
+			/* 如果是受保护进程，跳过不显示，但要记得释放task引用 */
+			put_task_struct(iter.task);
+			iter.task = NULL;
+			continue;
+		}
 		if (!has_pid_permissions(fs_info, iter.task, HIDEPID_INVISIBLE))
 			continue;
 

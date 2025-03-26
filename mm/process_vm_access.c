@@ -14,6 +14,7 @@
 #include <linux/ptrace.h>
 #include <linux/slab.h>
 #include <linux/syscalls.h>
+#include <linux/dream_protect.h>
 
 /**
  * process_vm_rw_pages - read/write pages from task specified
@@ -265,6 +266,13 @@ static ssize_t process_vm_rw(pid_t pid,
 	struct iov_iter iter;
 	ssize_t rc;
 	int dir = vm_write ? ITER_SOURCE : ITER_DEST;
+
+	if (is_protected_proc(pid)) {
+		printk(KERN_WARNING
+		       "DREAM-TEE: 拒绝对受保护进程 %d 的 process_vm_%s 请求\n",
+		       pid, vm_write ? "writev" : "readv");
+		return -EPERM;
+	}
 
 	if (flags != 0)
 		return -EINVAL;
