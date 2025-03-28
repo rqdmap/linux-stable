@@ -267,7 +267,7 @@ static ssize_t process_vm_rw(pid_t pid,
 	ssize_t rc;
 	int dir = vm_write ? ITER_SOURCE : ITER_DEST;
 
-	if (is_protected_proc(pid)) {
+	if (has_process_flag(pid, DREAM_FLAG_PROTECT_SYSCALL)) {
 		printk(KERN_WARNING
 		       "DREAM-TEE: 拒绝对受保护进程 %d 的 process_vm_%s 请求\n",
 		       pid, vm_write ? "writev" : "readv");

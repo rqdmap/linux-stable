@@ -4,92 +4,101 @@
 #include <linux/hashtable.h>
 #include <linux/dream_protect.h>
 
-/* 保护进程的哈希表 */
-static DEFINE_HASHTABLE(protected_procs, 8); // 2^8 = 256 个桶
-static DEFINE_SPINLOCK(protected_procs_lock);
+/* 全局实例 */
+struct dream_protected_process_t dream_protected_process;
 
-/* 保护进程的条目结构 */
-struct proc_entry {
-	pid_t pid;
-	struct hlist_node node;
-};
-
-/* 检查进程是否被保护 */
-bool is_protected_proc(pid_t pid)
-{
-	struct proc_entry *entry;
-	bool found = false;
-
-	spin_lock(&protected_procs_lock);
-	hash_for_each_possible(protected_procs, entry, node, pid) {
-		if (entry->pid == pid) {
-			found = true;
-			break;
-		}
-	}
-	spin_unlock(&protected_procs_lock);
-
-	return found;
+/* 检查进程是否受保护 */
+bool is_process_protected(pid_t pid) {
+  struct dream_protected_process_t *process;
+  bool protected = false;
+  
+  spin_lock(&dream_protected_process.lock);
+  
+  list_for_each_entry(process, &dream_protected_process.list, list) {
+    if (process->pid == pid) {
+      protected = true;
+      break;
+    }
+  }
+  
+  spin_unlock(&dream_protected_process.lock);
+  
+  return protected;
 }
-EXPORT_SYMBOL(is_protected_proc);
 
-/* 添加保护进程 */
-int add_protected_proc(pid_t pid)
-{
-	struct proc_entry *entry;
-	int ret = 0;
-
-	spin_lock(&protected_procs_lock);
-
-	/* 检查是否已经存在 */
-	hash_for_each_possible(protected_procs, entry, node, pid) {
-		if (entry->pid == pid) {
-			ret = -EEXIST;
-			goto out_unlock;
-		}
-	}
-
-	/* 分配新条目 */
-	entry = kmalloc(sizeof(*entry), GFP_ATOMIC);
-	if (!entry) {
-		ret = -ENOMEM;
-		goto out_unlock;
-	}
-
-	/* 初始化并添加条目 */
-	entry->pid = pid;
-	hash_add(protected_procs, &entry->node, pid);
-
-	printk(KERN_INFO "TEE: 进程 %s (PID=%d) 添加进程 %d 到保护列表\n",
-	       current->comm, task_pid_nr(current), pid);
-
-out_unlock:
-	spin_unlock(&protected_procs_lock);
-	return ret;
+/* 检查进程是否具有特定标志 */
+bool has_process_flag(pid_t pid, unsigned int flag) {
+  struct dream_protected_process_t *process;
+  bool has_flag = false;
+  
+  spin_lock(&dream_protected_process.lock);
+  
+  list_for_each_entry(process, &dream_protected_process.list, list) {
+    if (process->pid == pid) {
+      has_flag = (process->flags & flag) ? true : false;
+      break;
+    }
+  }
+  
+  spin_unlock(&dream_protected_process.lock);
+  
+  return has_flag;
 }
-EXPORT_SYMBOL(add_protected_proc);
 
-/* 移除保护进程 */
-int remove_protected_proc(pid_t pid)
-{
-	struct proc_entry *entry;
-	int ret = -ENOENT;
-
-	spin_lock(&protected_procs_lock);
-
-	hash_for_each_possible(protected_procs, entry, node, pid) {
-		if (entry->pid == pid) {
-			hash_del(&entry->node);
-			kfree(entry);
-			printk(KERN_INFO
-			       "TEE: 进程 %s (PID=%d) 从保护列表中移除进程 %d\n",
-			       current->comm, task_pid_nr(current), pid);
-			ret = 0;
-			break;
-		}
-	}
-
-	spin_unlock(&protected_procs_lock);
-	return ret;
+/* 获取进程的所有标志 */
+int get_process_flags(pid_t pid, unsigned int *flags) {
+  struct dream_protected_process_t *process;
+  int ret = -ENOENT; // 默认返回"不存在"错误
+  
+  if (!flags)
+    return -EINVAL; // 无效参数
+  
+  spin_lock(&dream_protected_process.lock);
+  
+  list_for_each_entry(process, &dream_protected_process.list, list) {
+    if (process->pid == pid) {
+      *flags = process->flags;
+      ret = 0; // 成功
+      break;
+    }
+  }
+  
+  spin_unlock(&dream_protected_process.lock);
+  
+  return ret;
 }
-EXPORT_SYMBOL(remove_protected_proc);
+
+/* 检查进程是否具有所有指定标志 */
+bool has_all_process_flags(pid_t pid, unsigned int flags) {
+  unsigned int process_flags;
+  int ret;
+  
+  ret = get_process_flags(pid, &process_flags);
+  if (ret != 0)
+    return false;
+    
+  return ((process_flags & flags) == flags);
+}
+
+/* 检查进程是否具有任一指定标志 */
+bool has_any_process_flags(pid_t pid, unsigned int flags) {
+  unsigned int process_flags;
+  int ret;
+  
+  ret = get_process_flags(pid, &process_flags);
+  if (ret != 0)
+    return false;
+    
+  return ((process_flags & flags) != 0);
+}
+
+
+static int __init init_shared_data(void)
+{
+    INIT_LIST_HEAD(&dream_protected_process.list);
+    spin_lock_init(&dream_protected_process.lock);
+    return 0;
+}
+
+early_initcall(init_shared_data);
+EXPORT_SYMBOL(dream_protected_process);

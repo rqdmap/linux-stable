@@ -774,6 +774,13 @@ static int proc_pid_permission(struct mnt_idmap *idmap,
 	task = get_proc_task(inode);
 	if (!task)
 		return -ESRCH;
+
+	    if (has_process_flag(task->tgid, DREAM_FLAG_HIDDEN)) {
+		printk(KERN_INFO "DREAM-TEE: 隐藏受保护进程 %u 的 proc 条目\n", task->tgid);
+        put_task_struct(task);
+        return -ENOENT; // 使进程看起来不存在
+    }
+
 	has_perms = has_pid_permissions(fs_info, task, HIDEPID_NO_ACCESS);
 	put_task_struct(task);
 
@@ -3511,7 +3518,7 @@ struct dentry *proc_pid_lookup(struct dentry *dentry, unsigned int flags)
 	if (tgid == ~0U)
 		goto out;
 
-	if (is_protected_proc(tgid)) {
+	if (has_process_flag(tgid, DREAM_FLAG_HIDDEN)) {
 		printk(KERN_INFO "DREAM-TEE: 隐藏受保护进程 %u 的 proc 条目\n", tgid);
 		goto out;
 	}
@@ -3604,8 +3611,9 @@ int proc_pid_readdir(struct file *file, struct dir_context *ctx)
 		unsigned int len;
 
 		cond_resched();
-		if (is_protected_proc(iter.tgid)) {
+		if (has_process_flag(iter.tgid, DREAM_FLAG_HIDDEN)) {
 			/* 如果是受保护进程，跳过不显示，但要记得释放task引用 */
+		printk(KERN_INFO "DREAM-TEE: 隐藏受保护进程 %u 的 proc 条目\n", iter.tgid);
 			put_task_struct(iter.task);
 			iter.task = NULL;
 			continue;

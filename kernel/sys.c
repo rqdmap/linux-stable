@@ -2885,49 +2885,6 @@ SYSCALL_DEFINE1(sysinfo, struct sysinfo __user *, info)
 	return 0;
 }
 
-SYSCALL_DEFINE2(dream_protect, unsigned int, op, pid_t, pid)
-{
-	struct task_struct *task;
-	int ret;
-
-	/* 首先验证调用者是否有权限执行此操作 */
-	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
-
-	/* 验证操作码 */
-	if (op != TEE_ADD_PROTECTED_PROC && op != TEE_REMOVE_PROTECTED_PROC)
-		return -EINVAL;
-
-	/* 验证PID */
-	if (pid <= 0)
-		return -EINVAL;
-
-	/* 查找目标进程 */
-	rcu_read_lock();
-	task = find_task_by_vpid(pid);
-	if (!task) {
-		rcu_read_unlock();
-		return -ESRCH;
-	}
-	get_task_struct(task);
-	rcu_read_unlock();
-
-	/* 执行操作 */
-	switch (op) {
-	case TEE_ADD_PROTECTED_PROC:
-		ret = add_protected_proc(pid);
-		break;
-	case TEE_REMOVE_PROTECTED_PROC:
-		ret = remove_protected_proc(pid);
-		break;
-	default:
-		ret = -EINVAL;
-	}
-
-	put_task_struct(task);
-	return ret;
-}
-
 #ifdef CONFIG_COMPAT
 struct compat_sysinfo {
 	s32 uptime;
