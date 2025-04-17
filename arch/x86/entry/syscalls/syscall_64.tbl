@@ -387,6 +387,13 @@
 461	common	lsm_list_modules	sys_lsm_list_modules
 462 	common  mseal			sys_mseal
 
+463   common   dream_channel_create    sys_dream_channel_create
+464   common   dream_channel_connect   sys_dream_channel_connect
+465   common   dream_channel_send   sys_dream_channel_send
+466   common   dream_channel_recv   sys_dream_channel_recv
+467   common   dream_channel_control   sys_dream_channel_control
+468   common   dream_channel_close   sys_dream_channel_close
+
 #
 # Due to a historical design error, certain syscalls are numbered differently
 # in x32 as compared to native x86_64.  These syscalls have numbers 512-547.

@@ -1303,4 +1303,18 @@ int __sys_getsockopt(int fd, int level, int optname, char __user *optval,
 		int __user *optlen);
 int __sys_setsockopt(int fd, int level, int optname, char __user *optval,
 		int optlen);
+
+/* Syscall for Dream secure channel */
+
+asmlinkage long sys_dream_channel_create(const char __user *name,
+					 uint32_t flags);
+asmlinkage long sys_dream_channel_connect(const char __user *name,
+					  uint32_t flags);
+asmlinkage long sys_dream_channel_send(int channel_fd, const void __user *buf,
+				       size_t len);
+asmlinkage long sys_dream_channel_recv(int channel_fd, void __user *buf,
+				       size_t len);
+asmlinkage long sys_dream_channel_control(int channel_fd, uint32_t flags);
+asmlinkage long sys_dream_channel_close(int channel_fd);
+
 #endif
