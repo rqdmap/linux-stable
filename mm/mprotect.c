@@ -37,6 +37,7 @@
 #include <asm/mmu_context.h>
 #include <asm/tlbflush.h>
 #include <asm/tlb.h>
+#include <linux/mprotect_observer.h>
 
 #include "internal.h"
 
@@ -804,6 +805,13 @@ static int do_mprotect_pkey(unsigned long start, size_t len,
 		newflags = calc_vm_prot_bits(prot, new_vma_pkey);
 		newflags |= (vma->vm_flags & ~mask_off_old_flags);
 
+		/* 获取旧的保护标志位，用于通知观察者 */
+		unsigned long oldflags = vma->vm_flags;
+
+		/* 通知观察者 mprotect 即将执行 */
+		notify_before_mprotect(nstart, tmp - nstart, oldflags, newflags,
+				       vma);
+
 		/* newflags >> 4 shift VM_MAY% in place of VM_% */
 		if ((newflags & ~(newflags >> 4)) & VM_ACCESS_FLAGS) {
 			error = -EACCES;
@@ -836,8 +844,13 @@ static int do_mprotect_pkey(unsigned long start, size_t len,
 		}
 
 		error = mprotect_fixup(&vmi, &tlb, vma, &prev, nstart, tmp, newflags);
+
 		if (error)
 			break;
+
+		/* 通知观察者 mprotect 执行完成 */
+		notify_after_mprotect(nstart, tmp - nstart, oldflags, newflags,
+				      vma, error);
 
 		tmp = vma_iter_end(&vmi);
 		nstart = tmp;
