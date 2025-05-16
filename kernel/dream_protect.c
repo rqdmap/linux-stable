@@ -25,6 +25,7 @@ bool is_process_protected(pid_t pid) {
   
   return protected;
 }
+EXPORT_SYMBOL(is_process_protected);
 
 /* 检查进程是否具有特定标志 */
 bool has_process_flag(pid_t pid, unsigned int flag) {
@@ -44,6 +45,7 @@ bool has_process_flag(pid_t pid, unsigned int flag) {
   
   return has_flag;
 }
+EXPORT_SYMBOL(has_process_flag);
 
 /* 获取进程的所有标志 */
 int get_process_flags(pid_t pid, unsigned int *flags) {
@@ -67,6 +69,7 @@ int get_process_flags(pid_t pid, unsigned int *flags) {
   
   return ret;
 }
+EXPORT_SYMBOL(get_process_flags);
 
 /* 检查进程是否具有所有指定标志 */
 bool has_all_process_flags(pid_t pid, unsigned int flags) {
@@ -79,6 +82,7 @@ bool has_all_process_flags(pid_t pid, unsigned int flags) {
     
   return ((process_flags & flags) == flags);
 }
+EXPORT_SYMBOL(has_all_process_flags);
 
 /* 检查进程是否具有任一指定标志 */
 bool has_any_process_flags(pid_t pid, unsigned int flags) {
@@ -91,7 +95,7 @@ bool has_any_process_flags(pid_t pid, unsigned int flags) {
     
   return ((process_flags & flags) != 0);
 }
-
+EXPORT_SYMBOL(has_any_process_flags);
 
 static int __init init_shared_data(void)
 {
