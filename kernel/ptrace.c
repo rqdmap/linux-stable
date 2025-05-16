@@ -1020,7 +1020,7 @@ int ptrace_request(struct task_struct *child, long request,
 	unsigned long flags;
 
 	/* 检查目标进程是否受保护 */
-	if (has_process_flag(task_pid_nr(child), DREAM_FLAG_PROTECT_SYSCALL) && !(request == PTRACE_TRACEME || request == PTRACE_KILL)) {
+	if (has_process_flag(task_pid_nr(child), DREAM_FLAG_PROTECT_EXTERN_SYSCALL) && !(request == PTRACE_TRACEME || request == PTRACE_KILL)) {
 		printk(KERN_WARNING
 		       "DREAM-TEE: 拒绝对受保护进程 %d 的 ptrace 请求 %ld\n",
 		       task_pid_nr(child), request);
