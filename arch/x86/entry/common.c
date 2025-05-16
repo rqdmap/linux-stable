@@ -20,6 +20,7 @@
 #include <linux/syscalls.h>
 #include <linux/uaccess.h>
 #include <linux/init.h>
+#include <linux/dream_protect.h>
 
 #ifdef CONFIG_XEN_PV
 #include <xen/xen-ops.h>
@@ -80,7 +81,12 @@ __visible noinstr bool do_syscall_64(struct pt_regs *regs, int nr)
 
 	instrumentation_begin();
 
-	if (!do_syscall_x64(regs, nr) && !do_syscall_x32(regs, nr) && nr != -1) {
+	/* 添加DREAM安全模块的系统调用拦截逻辑 */
+	if (dream_syscall_intercept(regs, nr)) {
+		/* 拒绝系统调用，返回权限错误 */
+		regs->ax = -EPERM;
+	} else if (!do_syscall_x64(regs, nr) && !do_syscall_x32(regs, nr) &&
+		   nr != -1) {
 		/* Invalid system call, but still a system call. */
 		regs->ax = __x64_sys_ni_syscall(regs);
 	}

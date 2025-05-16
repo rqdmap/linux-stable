@@ -11,6 +11,8 @@
 #define TEE_REMOVE_PROTECTED_PROC 2
 
 /* 函数声明 */
+bool dream_syscall_intercept(struct pt_regs *regs, int nr);
+
 bool is_process_protected(pid_t pid);
 bool has_process_flag(pid_t pid, unsigned int flag);
 int get_process_flags(pid_t pid, unsigned int *flags);
