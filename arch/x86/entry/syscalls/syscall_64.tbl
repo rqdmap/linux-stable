@@ -393,6 +393,7 @@
 466   common   dream_channel_recv   sys_dream_channel_recv
 467   common   dream_channel_control   sys_dream_channel_control
 468   common   dream_channel_close   sys_dream_channel_close
+469   common   get_file_tpm_key      sys_get_file_tpm_key
 
 #
 # Due to a historical design error, certain syscalls are numbered differently

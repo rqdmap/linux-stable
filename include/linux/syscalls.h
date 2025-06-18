@@ -1317,4 +1317,6 @@ asmlinkage long sys_dream_channel_recv(int channel_fd, void __user *buf,
 asmlinkage long sys_dream_channel_control(int channel_fd, uint32_t flags);
 asmlinkage long sys_dream_channel_close(int channel_fd);
 
+asmlinkage long sys_get_file_tpm_key(unsigned char __user *key_buffer,
+				     size_t buffer_size);
 #endif

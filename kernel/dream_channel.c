@@ -195,10 +195,11 @@ out_free:
 }
 
 /* 系统调用入口函数 - 控制通道 */
-SYSCALL_DEFINE2(dream_channel_control, int, channel_fd, uint32_t, flags)
+SYSCALL_DEFINE3(dream_channel_control, int, channel_fd, uint32_t, flags, void *,
+		arg)
 {
 	if (dream_control_fn)
-		return dream_control_fn(channel_fd, flags);
+		return dream_control_fn(channel_fd, flags, arg);
 	return -ENOSYS;
 }
 
